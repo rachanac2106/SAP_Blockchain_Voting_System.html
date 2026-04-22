@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SAP Blockchain Voting System</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: '72', Arial, sans-serif; background: #f5f6f7; color: #32363a; }
+    .shell-header {
+      background: linear-gradient(135deg, #0a6ed1, #0854a0);
+      color: white; padding: 0 24px;
+      display: flex; align-items: center; height: 48px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    .shell-header .logo { font-size: 20px; font-weight: 700; letter-spacing: 1px; margin-right: 24px; }
+    .shell-header .app-name { font-size: 15px; opacity: 0.9; }
+    .nav-bar {
+      background: white; border-bottom: 1px solid #d9d9d9;
+      display: flex; align-items: center; padding: 0 24px; height: 44px;
+    }
+    .nav-bar button {
+      background: none; border: none; cursor: pointer;
+      padding: 10px 16px; font-size: 14px; color: #0a6ed1;
+      border-bottom: 2px solid transparent; margin-right: 4px;
+    }
+    .nav-bar button.active { border-bottom-color: #0a6ed1; color: #0a6ed1; font-weight: 600; }
+    .main { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
+    .tile-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 16px; margin-bottom: 28px; }
+    .tile {
+      background: white; border-radius: 8px; padding: 20px 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-left: 4px solid #0a6ed1;
+    }
+    .tile .val { font-size: 32px; font-weight: 700; color: #0a6ed1; }
+    .tile .lbl { font-size: 13px; color: #6a6d70; margin-top: 4px; }
+    .section-title { font-size: 16px; font-weight: 600; color: #32363a; margin-bottom: 14px; }
+    .card {
+      background: white; border-radius: 8px; padding: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 20px;
+    }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .form-row { margin-bottom: 16px; }
+    .form-row label { display: block; font-size: 13px; color: #6a6d70; margin-bottom: 4px; font-weight: 600; }
+    .form-row input, .form-row select {
+      width: 100%; padding: 8px 12px; border: 1px solid #d1d1d6;
+      border-radius: 4px; font-size: 14px; color: #32363a;
+      transition: border-color .2s;
+    }
+    .form-row input:focus, .form-row select:focus { outline: none; border-color: #0a6ed1; }
+    .btn {
+      padding: 10px 24px; border-radius: 4px; font-size: 14px;
+      font-weight: 600; cursor: pointer; border: none; transition: all .2s;
+    }
+    .btn-primary { background: #0a6ed1; color: white; }
+    .btn-primary:hover { background: #0854a0; }
+    .btn-secondary { background: white; color: #0a6ed1; border: 1px solid #0a6ed1; }
+    .btn-secondary:hover { background: #f0f7ff; }
+    .btn-success { background: #0ead69; color: white; }
+    .btn-danger { background: #e9340a; color: white; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    thead th { background: #f5f6f7; padding: 10px 12px; text-align: left; font-weight: 600; color: #6a6d70; border-bottom: 2px solid #e5e5e5; }
+    tbody tr { border-bottom: 1px solid #f0f0f0; }
+    tbody tr:hover { background: #fafbfc; }
+    tbody td { padding: 10px 12px; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .badge-open { background: #d5f0e5; color: #0ead69; }
+    .badge-closed { background: #ffe0d8; color: #e9340a; }
+    .badge-pending { background: #fff3cd; color: #b8860b; }
+    .progress-bar { height: 10px; background: #e5e5e5; border-radius: 6px; overflow: hidden; margin-top: 6px; }
+    .progress-fill { height: 100%; border-radius: 6px; background: #0a6ed1; transition: width .5s; }
+    .hash { font-family: monospace; font-size: 11px; color: #6a6d70; word-break: break-all; }
+    .chain-block {
+      background: #f0f7ff; border: 1px solid #b3d4f5; border-radius: 6px;
+      padding: 12px; margin-bottom: 10px; position: relative;
+    }
+    .chain-block::after {
+      content: '▼'; position: absolute; bottom: -18px; left: 50%;
+      transform: translateX(-50%); color: #0a6ed1; font-size: 16px;
+    }
+    .chain-block:last-child::after { display: none; }
+    .chain-block .block-id { font-weight: 700; color: #0a6ed1; font-size: 13px; }
+    .toast {
+      position: fixed; top: 70px; right: 24px;
+      background: #0ead69; color: white; padding: 12px 20px;
+      border-radius: 6px; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,.2);
+      display: none; z-index: 999; animation: slideIn .3s ease;
+    }
+    @keyframes slideIn { from { transform: translateX(60px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .vote-card {
+      background: white; border-radius: 8px; padding: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1); cursor: pointer;
+      border: 2px solid transparent; transition: all .2s;
+    }
+    .vote-card:hover { border-color: #0a6ed1; transform: translateY(-2px); }
+    .vote-card.selected { border-color: #0a6ed1; background: #f0f7ff; }
+    .vote-card .cname { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .vote-card .cdept { font-size: 13px; color: #6a6d70; }
+    .vote-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 14px; margin: 16px 0; }
+    .result-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .result-bar .rname { width: 150px; font-size: 13px; font-weight: 600; }
+    .result-bar .rbar { flex: 1; }
+    .result-bar .rpct { width: 50px; text-align: right; font-size: 13px; color: #0a6ed1; font-weight: 700; }
+  </style>
+</head>
+<body>
+
+<div class="shell-header">
+  <div class="logo">SAP</div>
+  <div class="app-name">🗳️ SAP Blockchain Voting System</div>
+</div>
+<div class="nav-bar">
+  <button class="active" onclick="switchTab('dashboard')">Dashboard</button>
+  <button onclick="switchTab('elections')">Elections</button>
+  <button onclick="switchTab('vote')">Cast Vote</button>
+  <button onclick="switchTab('results')">Results</button>
+  <button onclick="switchTab('blockchain')">Blockchain Ledger</button>
+</div>
+
+<div class="main">
+
+  <!-- DASHBOARD -->
+  <div id="tab-dashboard" class="tab-content active">
+    <div class="tile-container">
+      <div class="tile"><div class="val">3</div><div class="lbl">Active Elections</div></div>
+      <div class="tile" style="border-color:#0ead69"><div class="val" style="color:#0ead69">1,248</div><div class="lbl">Total Votes Cast</div></div>
+      <div class="tile" style="border-color:#e9340a"><div class="val" style="color:#e9340a">7</div><div class="lbl">Blocks in Chain</div></div>
+      <div class="tile" style="border-color:#f5a623"><div class="val" style="color:#f5a623">99.9%</div><div class="lbl">System Integrity</div></div>
+    </div>
+    <div class="card">
+      <div class="section-title">Election Overview</div>
+      <table>
+        <thead><tr><th>Election ID</th><th>Title</th><th>Status</th><th>Votes</th><th>Closes</th></tr></thead>
+        <tbody>
+          <tr><td>#EL-001</td><td>SAP Board Member Election</td><td><span class="badge badge-open">Open</span></td><td>523</td><td>30 Apr 2026</td></tr>
+          <tr><td>#EL-002</td><td>Annual Budget Allocation</td><td><span class="badge badge-open">Open</span></td><td>312</td><td>25 Apr 2026</td></tr>
+          <tr><td>#EL-003</td><td>HR Policy Revision Vote</td><td><span class="badge badge-open">Open</span></td><td>413</td><td>28 Apr 2026</td></tr>
+          <tr><td>#EL-004</td><td>Q4 Strategy Review</td><td><span class="badge badge-closed">Closed</span></td><td>890</td><td>15 Apr 2026</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ELECTIONS -->
+  <div id="tab-elections" class="tab-content">
+    <div class="card">
+      <div class="section-title">Create New Election</div>
+      <div class="grid2">
+        <div>
+          <div class="form-row"><label>Election Title</label><input id="elTitle" placeholder="e.g. Board Member Election"/></div>
+          <div class="form-row"><label>Department</label>
+            <select id="elDept">
+              <option>All Employees</option><option>HR Department</option>
+              <option>Finance</option><option>Engineering</option><option>Operations</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <div class="form-row"><label>Voting Opens</label><input type="date" id="elOpen"/></div>
+          <div class="form-row"><label>Voting Closes</label><input type="date" id="elClose"/></div>
+        </div>
+      </div>
+      <div class="form-row"><label>Candidates (comma-separated)</label><input id="elCandidates" placeholder="Alice Kumar, Bob Raj, Carol Singh"/></div>
+      <div style="margin-top:8px; display:flex; gap:10px;">
+        <button class="btn btn-primary" onclick="createElection()">➕ Create Election</button>
+        <button class="btn btn-secondary" onclick="resetForm()">Reset</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-title">Manage Elections</div>
+      <table>
+        <thead><tr><th>ID</th><th>Title</th><th>Candidates</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="electionTable">
+          <tr><td>#EL-001</td><td>SAP Board Member Election</td><td>3</td><td><span class="badge badge-open">Open</span></td><td><button class="btn btn-danger" style="padding:4px 12px;font-size:12px;">Close</button></td></tr>
+          <tr><td>#EL-002</td><td>Annual Budget Allocation</td><td>2</td><td><span class="badge badge-open">Open</span></td><td><button class="btn btn-danger" style="padding:4px 12px;font-size:12px;">Close</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CAST VOTE -->
+  <div id="tab-vote" class="tab-content">
+    <div class="card">
+      <div class="section-title">Select Election</div>
+      <div class="form-row">
+        <label>Election</label>
+        <select id="voteElection" onchange="loadCandidates()">
+          <option value="">-- Select an election --</option>
+          <option value="1">SAP Board Member Election</option>
+          <option value="2">Annual Budget Allocation</option>
+          <option value="3">HR Policy Revision Vote</option>
+        </select>
+      </div>
+      <div class="form-row"><label>Employee ID</label><input id="empId" placeholder="e.g. SAP-2024-001"/></div>
+    </div>
+    <div class="card" id="candidateCard" style="display:none;">
+      <div class="section-title">Select Your Candidate</div>
+      <div class="vote-grid" id="candidateGrid"></div>
+      <div style="margin-top:16px;">
+        <button class="btn btn-success" onclick="castVote()">🔒 Submit Vote to Blockchain</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="tab-results" class="tab-content">
+    <div class="card">
+      <div class="section-title">Election Results — SAP Board Member Election</div>
+      <div id="resultBars"></div>
+    </div>
+    <div class="card">
+      <div class="section-title">Voter Participation</div>
+      <div style="margin-bottom:6px;font-size:13px;">Total Eligible: 600 &nbsp;|&nbsp; Voted: 523 &nbsp;|&nbsp; Turnout: <strong>87.2%</strong></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:87.2%;background:#0ead69"></div></div>
+    </div>
+  </div>
+
+  <!-- BLOCKCHAIN LEDGER -->
+  <div id="tab-blockchain" class="tab-content">
+    <div class="card">
+      <div class="section-title">Immutable Blockchain Ledger</div>
+      <p style="font-size:13px;color:#6a6d70;margin-bottom:16px;">Every vote is recorded as a cryptographic block. Each block contains a SHA-256 hash of the previous block, ensuring tamper-proof integrity.</p>
+      <div id="chainBlocks"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const candidates = {
+  1: ['Arjun Sharma', 'Priya Patel', 'Ravi Menon'],
+  2: ['Option A: Increase R&D Budget', 'Option B: Focus on Sales'],
+  3: ['Policy Version 2.1', 'Policy Version 2.2', 'Keep Current Policy']
+};
+
+const results = [
+  { name: 'Arjun Sharma', votes: 243, pct: 46 },
+  { name: 'Priya Patel', votes: 187, pct: 36 },
+  { name: 'Ravi Menon', votes: 93, pct: 18 }
+];
+
+const blocks = [
+  { id: 'Block #0', type: 'Genesis', hash: '0000000000000000...', prev: 'None', data: 'SAP Voting System Initialized' },
+  { id: 'Block #1', type: 'Vote', hash: 'a3f8c2e1d4b7...', prev: '0000000000...', data: 'VoterID: *** | Election: EL-001 | Choice: Encrypted' },
+  { id: 'Block #2', type: 'Vote', hash: 'b9d2f1a8e5c4...', prev: 'a3f8c2e1d4b7...', data: 'VoterID: *** | Election: EL-002 | Choice: Encrypted' },
+  { id: 'Block #3', type: 'Audit', hash: 'c7e3a9b2f6d1...', prev: 'b9d2f1a8e5c4...', data: 'Integrity Check Passed — 523 votes verified' },
+];
+
+let selectedCandidate = null;
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-bar button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+  if (tab === 'results') renderResults();
+  if (tab === 'blockchain') renderChain();
+}
+
+function showToast(msg, color = '#0ead69') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.background = color;
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 3000);
+}
+
+function loadCandidates() {
+  const val = parseInt(document.getElementById('voteElection').value);
+  const grid = document.getElementById('candidateGrid');
+  const card = document.getElementById('candidateCard');
+  if (!val) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  selectedCandidate = null;
+  grid.innerHTML = (candidates[val] || []).map((c, i) => `
+    <div class="vote-card" onclick="selectCandidate(this,'${c}')">
+      <div class="cname">${c}</div>
+      <div class="cdept">Candidate ${i+1}</div>
+    </div>`).join('');
+}
+
+function selectCandidate(el, name) {
+  document.querySelectorAll('.vote-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected'); selectedCandidate = name;
+}
+
+function castVote() {
+  const empId = document.getElementById('empId').value.trim();
+  if (!empId) { showToast('⚠️ Please enter Employee ID', '#e9340a'); return; }
+  if (!selectedCandidate) { showToast('⚠️ Please select a candidate', '#e9340a'); return; }
+  showToast(`✅ Vote for "${selectedCandidate}" recorded on blockchain!`);
+  document.getElementById('voteElection').value = '';
+  document.getElementById('empId').value = '';
+  document.getElementById('candidateCard').style.display = 'none';
+  blocks.push({
+    id: `Block #${blocks.length}`, type: 'Vote',
+    hash: Math.random().toString(36).substr(2,12) + '...',
+    prev: blocks[blocks.length-1].hash,
+    data: `VoterID: ${empId} | Choice: Encrypted | TS: ${new Date().toISOString()}`
+  });
+}
+
+function createElection() {
+  const title = document.getElementById('elTitle').value.trim();
+  if (!title) { showToast('⚠️ Enter election title', '#e9340a'); return; }
+  showToast(`✅ Election "${title}" created and deployed to blockchain!`);
+  document.getElementById('elTitle').value = '';
+}
+
+function resetForm() {
+  ['elTitle','elOpen','elClose','elCandidates'].forEach(id => document.getElementById(id).value = '');
+}
+
+function renderResults() {
+  const total = results.reduce((s,r) => s + r.votes, 0);
+  document.getElementById('resultBars').innerHTML = results.map(r => `
+    <div class="result-bar">
+      <div class="rname">${r.name}</div>
+      <div class="rbar"><div class="progress-bar"><div class="progress-fill" style="width:${r.pct}%"></div></div></div>
+      <div class="rpct">${r.pct}%</div>
+    </div>
+    <div style="font-size:12px;color:#6a6d70;margin-bottom:14px;margin-left:160px;">${r.votes} votes</div>
+  `).join('');
+}
+
+function renderChain() {
+  document.getElementById('chainBlocks').innerHTML = blocks.map(b => `
+    <div class="chain-block">
+      <div class="block-id">${b.id} — ${b.type}</div>
+      <div style="font-size:12px;margin:4px 0;"><strong>Hash:</strong> <span class="hash">${b.hash}</span></div>
+      <div style="font-size:12px;"><strong>Prev:</strong> <span class="hash">${b.prev}</span></div>
+      <div style="font-size:12px;margin-top:4px;color:#32363a;">${b.data}</div>
+    </div>`).join('');
+}
+</script>
+</body>
+</html>
